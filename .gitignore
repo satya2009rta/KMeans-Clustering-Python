@@ -1,1 +1,7 @@
 .vscode/
+docword.enron.txt
+vocab.enron.txt
+docword.kos.txt
+vocab.kos.txt
+docword.nips.txt
+vocab.nips.txt
