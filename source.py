@@ -2,24 +2,25 @@
 # Importing the required packages
 import numpy as np
 import sys
+import random
 
 #np.set_printoptions(threshold=np.nan)
 
 def loadData(fileName):
     f = open(fileName, "r")
-    nDoc = int(f.next())
-    nTerm = int(f.next())
-    N = int(f.next())
+    nDoc = int(f.readline())
+    nTerm = int(f.readline())
+    N = int(f.readline())
     docTerm = [[] for i in range(nDoc)]
     for i in range(N):
-        docID, termID, freq = [int(x) for x in f.next().split()]
-        docTerm[docID].append(termID)
+        docID, termID, freq = [int(x) for x in f.readline().split()]
+        docTerm[docID-1].append(termID-1)
     f.close()
     return nDoc, nTerm, docTerm
 
 def jaccardDistance(doc1, doc2):
     sameWords = set(doc1).intersection(set(doc2))
-    differentWords = set(doc1).symmetric_difference(set(b))
+    differentWords = set(doc1).symmetric_difference(set(doc2))
     dist = 1 - (len(sameWords)/(len(sameWords) + len(differentWords)))
     return dist
 
@@ -55,15 +56,20 @@ def kmeans(k, given_seeds, docTerm):
                     id = given_seeds[j]
             internal_cluster[id].append(i)
         new_seeds = []
-        new_seeds = find_centroid(internal_cluster, docTerm)
+        new_seeds = findCentroid(internal_cluster, docTerm)
         if(jaccardDistance(new_seeds, given_seeds)==0):
             break
         given_seeds = new_seeds
     return new_seeds
 
+def initialSeeds(nDoc, k):
+    return random.sample(range(nDoc), k)
 
 # Main Method
 def main():
+    nDoc, nTerm, docTerm = loadData("docword.enron.txt")
+    print(kmeans(5, initialSeeds(nDoc, 5), docTerm))
+
 
 # Calling main function
 if __name__=="__main__":
