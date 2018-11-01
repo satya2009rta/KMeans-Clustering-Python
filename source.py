@@ -1,6 +1,5 @@
 # DMML Assignment 2 by Arpan Biswas (BMC201604) and Satya Prakash Nayak (BMC201624)
 # Importing the required packages
-import numpy as np
 import sys
 import random
 
@@ -24,25 +23,28 @@ def jaccardDistance(doc1, doc2):
     dist = 1 - (len(sameWords)/(len(sameWords) + len(differentWords)))
     return dist
 
-def findCentroid(internal_cluster, docTerm):
+def findCentroid(internal_cluster, docTerm, nTerm):
     new_seeds = []
     for i, docList in internal_cluster.items():
-        min_sum = sys.maxsize
+        numVisitedTerm = [0 for j in range(nTerm)]
+        for doc in docList:
+            for term in docTerm[doc]:
+                numVisitedTerm[term] += 1
+        seed = filter(lambda x: (numVisitedTerm[x]/len(docList))>0.5, range(len(numVisitedTerm)))
+        minimum = sys.maxsize
         id = 0
-        for j in range(len(docList)):
-            sum_distance = 0
-            for k in range(len(docList)):
-                sum_distance += jaccardDistance(docTerm[docList[j]], docTerm[docList[k]])
-            if(min_sum > sum_distance):
-                min_sum = sum_distance
-                id = docList[j]
+        for doc in docList:
+            dist = jaccardDistance(docTerm[doc], seed)
+            if(dist < minimum):
+                minimum = dist
+                id = doc
         new_seeds.append(id)
     return new_seeds
             
 
 # Calculate K means
-def kmeans(k, given_seeds, docTerm):
-    while(True):
+def kmeans(k, given_seeds, docTerm, nTerm):
+    for iteration in range(10):
         internal_cluster = {}
         for j in range(k):
             internal_cluster[given_seeds[j]] = []
@@ -55,19 +57,21 @@ def kmeans(k, given_seeds, docTerm):
                     minimum = dist
                     id = given_seeds[j]
             internal_cluster[id].append(i)
-        new_seeds = findCentroid(internal_cluster, docTerm)
+        new_seeds = findCentroid(internal_cluster, docTerm, nTerm)
         if(jaccardDistance(new_seeds, given_seeds)==0):
             break
         given_seeds = new_seeds
-    return new_seeds
+    return internal_cluster
 
 def initialSeeds(nDoc, k):
     return random.sample(range(nDoc), k)
 
 # Main Method
 def main():
-    nDoc, nTerm, docTerm = loadData("docword.enron.txt")
-    print(kmeans(5, initialSeeds(nDoc, 5), docTerm))
+    nDoc, nTerm, docTerm = loadData("docword.kos.txt")
+    internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm)
+    for i, t in internal_cluster.items():
+        print(i,len(t))
 
 
 # Calling main function
