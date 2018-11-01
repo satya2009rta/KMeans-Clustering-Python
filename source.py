@@ -5,6 +5,17 @@ import sys
 
 #np.set_printoptions(threshold=np.nan)
 
+def loadData(fileName):
+    f = open(fileName, "r")
+    nDoc = int(f.next())
+    nTerm = int(f.next())
+    N = int(f.next())
+    docTerm = [[] for i in range(nDoc)]
+    for i in range(N):
+        docID, termID, freq = [int(x) for x in f.next().split()]
+        docTerm[docID].append(termID)
+    f.close()
+    return docTerm
 
 def jaccardDistance(doc1, doc2):
     sameWords = set(doc1).intersection(set(doc2))
