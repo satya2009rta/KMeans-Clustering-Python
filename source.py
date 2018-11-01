@@ -15,7 +15,7 @@ def loadData(fileName):
         docID, termID, freq = [int(x) for x in f.next().split()]
         docTerm[docID].append(termID)
     f.close()
-    return docTerm
+    return nDoc, nTerm, docTerm
 
 def jaccardDistance(doc1, doc2):
     sameWords = set(doc1).intersection(set(doc2))
