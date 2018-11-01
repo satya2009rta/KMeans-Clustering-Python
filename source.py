@@ -58,9 +58,12 @@ def findCentroid(internal_cluster, docTerm, nTerm, distance):
                 numVisitedTerm[term][1] += f/len(docList)
         seed = []
         for j in range(len(numVisitedTerm)):
-            if numVisitedTerm[j][0] > 0.5 * len(docList):
+            if numVisitedTerm[j][0] > 0.25 * len(docList):
                 seed.append((j,numVisitedTerm[j][1]))
-
+        if(len(seed)==0):
+            for j in range(len(numVisitedTerm)):
+                if numVisitedTerm[j][0] > 0:
+                    seed.append((j,numVisitedTerm[j][1]))
         minimum = sys.maxsize
         id = 0
         for doc in docList:
@@ -99,11 +102,9 @@ def initialSeeds(nDoc, k):
 # Main Method
 def main():
     nDoc, nTerm, docTerm = loadData("docword.kos.txt")
-    # internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, jaccardDistance)
-    internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, tf_idfDistance)
-    for i, t in internal_cluster.items():
-        print(i,len(t))
-
+    clusters_jaccard = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, jaccardDistance)
+    clusters_tf_idf = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, tf_idfDistance)
+    print (clusters_jaccard, clusters_tf_idf)
 
 # Calling main function
 if __name__=="__main__":
