@@ -3,7 +3,6 @@
 import sys
 import random
 
-#np.set_printoptions(threshold=np.nan)
 
 def loadData(fileName):
     f = open(fileName, "r")
@@ -13,11 +12,13 @@ def loadData(fileName):
     docTerm = [[] for i in range(nDoc)]
     for i in range(N):
         docID, termID, freq = [int(x) for x in f.readline().split()]
-        docTerm[docID-1].append(termID-1)
+        docTerm[docID-1].append((termID-1, freq))
     f.close()
     return nDoc, nTerm, docTerm
 
-def jaccardDistance(doc1, doc2):
+def jaccardDistance(dc1, dc2):
+    doc1 = [i for (i,f) in dc1]
+    doc2 = [i for (i,f) in dc2]
     sameWords = set(doc1).intersection(set(doc2))
     differentWords = set(doc1).symmetric_difference(set(doc2))
     dist = 1 - (len(sameWords)/(len(sameWords) + len(differentWords)))
@@ -26,11 +27,16 @@ def jaccardDistance(doc1, doc2):
 def findCentroid(internal_cluster, docTerm, nTerm, distance):
     new_seeds = []
     for i, docList in internal_cluster.items():
-        numVisitedTerm = [0 for j in range(nTerm)]
+        numVisitedTerm = [[0,0] for j in range(nTerm)]
         for doc in docList:
-            for term in docTerm[doc]:
-                numVisitedTerm[term] += 1
-        seed = list(filter(lambda x: (numVisitedTerm[x]/len(docList))>0.5, range(len(numVisitedTerm))))
+            for (term,f) in docTerm[doc]:
+                numVisitedTerm[term][0] += 1
+                numVisitedTerm[term][1] += f/len(docList)
+        seed = []
+        for j in range(len(numVisitedTerm)):
+            if numVisitedTerm[j][0] > 0.5 * len(docList):
+                seed.append((j,numVisitedTerm[j][1]))
+
         minimum = sys.maxsize
         id = 0
         for doc in docList:
@@ -58,7 +64,7 @@ def kmeans(k, given_seeds, docTerm, nTerm, distance):
                     id = given_seeds[j]
             internal_cluster[id].append(i)
         new_seeds = findCentroid(internal_cluster, docTerm, nTerm, distance)
-        if(distance(new_seeds, given_seeds)==0):
+        if(given_seeds == new_seeds):
             break
         given_seeds = new_seeds
     return internal_cluster
