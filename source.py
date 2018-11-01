@@ -2,7 +2,7 @@
 # Importing the required packages
 import sys
 import random
-
+import math
 
 def loadData(fileName):
     f = open(fileName, "r")
@@ -10,10 +10,15 @@ def loadData(fileName):
     nTerm = int(f.readline())
     N = int(f.readline())
     docTerm = [[] for i in range(nDoc)]
+    docFreq = [0 for i in range(nTerm)]
     for i in range(N):
         docID, termID, freq = [int(x) for x in f.readline().split()]
         docTerm[docID-1].append((termID-1, freq))
+        docFreq[termID-1] += 1
     f.close()
+    for j in range(nDoc):
+        for (t,f) in docTerm[j]:
+            f *= math.log (nDoc/docFreq[t])
     return nDoc, nTerm, docTerm
 
 def jaccardDistance(dc1, dc2):
