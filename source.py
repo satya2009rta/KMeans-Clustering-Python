@@ -55,7 +55,6 @@ def kmeans(k, given_seeds, docTerm):
                     minimum = dist
                     id = given_seeds[j]
             internal_cluster[id].append(i)
-        new_seeds = []
         new_seeds = findCentroid(internal_cluster, docTerm)
         if(jaccardDistance(new_seeds, given_seeds)==0):
             break
