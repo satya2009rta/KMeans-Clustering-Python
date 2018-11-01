@@ -30,7 +30,7 @@ def findCentroid(internal_cluster, docTerm, nTerm):
         for doc in docList:
             for term in docTerm[doc]:
                 numVisitedTerm[term] += 1
-        seed = filter(lambda x: (numVisitedTerm[x]/len(docList))>0.5, range(len(numVisitedTerm)))
+        seed = list(filter(lambda x: (numVisitedTerm[x]/len(docList))>0.5, range(len(numVisitedTerm))))
         minimum = sys.maxsize
         id = 0
         for doc in docList:
@@ -44,7 +44,7 @@ def findCentroid(internal_cluster, docTerm, nTerm):
 
 # Calculate K means
 def kmeans(k, given_seeds, docTerm, nTerm):
-    for iteration in range(10):
+    for iteration in range(2):
         internal_cluster = {}
         for j in range(k):
             internal_cluster[given_seeds[j]] = []
