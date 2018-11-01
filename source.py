@@ -9,17 +9,36 @@ def loadData(fileName):
     nDoc = int(f.readline())
     nTerm = int(f.readline())
     N = int(f.readline())
+    tempDocTerm = [[] for i in range(nDoc)]
     docTerm = [[] for i in range(nDoc)]
     docFreq = [0 for i in range(nTerm)]
     for i in range(N):
         docID, termID, freq = [int(x) for x in f.readline().split()]
-        docTerm[docID-1].append((termID-1, freq))
+        tempDocTerm[docID-1].append((termID-1, float(freq)))
         docFreq[termID-1] += 1
     f.close()
     for j in range(nDoc):
-        for (t,f) in docTerm[j]:
-            f *= math.log (nDoc/docFreq[t])
+        for (t,f) in tempDocTerm[j]:
+            docTerm[j].append((t , f * math.log (float(nDoc)/float(docFreq[t]))))
     return nDoc, nTerm, docTerm
+
+def norm(dc):
+    return math.sqrt(sum([f*f for (i,f) in dc]))
+
+def tf_idfDistance(dc1,dc2):
+    i = 0
+    j = 0
+    sum = 0
+    while (i < len(dc1) and j < len(dc2)):
+        if dc1[i][0] == dc2[j][0]:
+            sum += dc1[i][1]*dc2[j][1]
+            i += 1
+            j += 1
+        elif dc1[i][0] < dc2[j][0]:
+            i += 1
+        else:
+            j += 1
+    return sum/(norm(dc1)*norm(dc2))
 
 def jaccardDistance(dc1, dc2):
     doc1 = [i for (i,f) in dc1]
@@ -80,7 +99,8 @@ def initialSeeds(nDoc, k):
 # Main Method
 def main():
     nDoc, nTerm, docTerm = loadData("docword.kos.txt")
-    internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, jaccardDistance)
+    # internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, jaccardDistance)
+    internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, tf_idfDistance)
     for i, t in internal_cluster.items():
         print(i,len(t))
 
