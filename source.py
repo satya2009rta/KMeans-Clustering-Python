@@ -23,7 +23,7 @@ def jaccardDistance(doc1, doc2):
     dist = 1 - (len(sameWords)/(len(sameWords) + len(differentWords)))
     return dist
 
-def findCentroid(internal_cluster, docTerm, nTerm):
+def findCentroid(internal_cluster, docTerm, nTerm, distance):
     new_seeds = []
     for i, docList in internal_cluster.items():
         numVisitedTerm = [0 for j in range(nTerm)]
@@ -34,7 +34,7 @@ def findCentroid(internal_cluster, docTerm, nTerm):
         minimum = sys.maxsize
         id = 0
         for doc in docList:
-            dist = jaccardDistance(docTerm[doc], seed)
+            dist = distance(docTerm[doc], seed)
             if(dist < minimum):
                 minimum = dist
                 id = doc
@@ -43,7 +43,7 @@ def findCentroid(internal_cluster, docTerm, nTerm):
             
 
 # Calculate K means
-def kmeans(k, given_seeds, docTerm, nTerm):
+def kmeans(k, given_seeds, docTerm, nTerm, distance):
     for iteration in range(2):
         internal_cluster = {}
         for j in range(k):
@@ -52,13 +52,13 @@ def kmeans(k, given_seeds, docTerm, nTerm):
             minimum = sys.maxsize
             id = 0
             for j in range(k):
-                dist = jaccardDistance(docTerm[given_seeds[j]], docTerm[i])
+                dist = distance(docTerm[given_seeds[j]], docTerm[i])
                 if(dist < minimum):
                     minimum = dist
                     id = given_seeds[j]
             internal_cluster[id].append(i)
-        new_seeds = findCentroid(internal_cluster, docTerm, nTerm)
-        if(jaccardDistance(new_seeds, given_seeds)==0):
+        new_seeds = findCentroid(internal_cluster, docTerm, nTerm, distance)
+        if(distance(new_seeds, given_seeds)==0):
             break
         given_seeds = new_seeds
     return internal_cluster
@@ -69,7 +69,7 @@ def initialSeeds(nDoc, k):
 # Main Method
 def main():
     nDoc, nTerm, docTerm = loadData("docword.kos.txt")
-    internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm)
+    internal_cluster = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, jaccardDistance)
     for i, t in internal_cluster.items():
         print(i,len(t))
 
