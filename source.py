@@ -4,42 +4,50 @@ import sys
 import random
 import math
 
+MAX_ITERATION = 2
+
+# Loads the data from file
 def loadData(fileName):
     f = open(fileName, "r")
-    nDoc = int(f.readline())
-    nTerm = int(f.readline())
-    N = int(f.readline())
-    tempDocTerm = [[] for i in range(nDoc)]
-    docTerm = [[] for i in range(nDoc)]
-    docFreq = [0 for i in range(nTerm)]
+    nDoc = int(f.readline())    # number of document
+    nTerm = int(f.readline())   # number of terms
+    N = int(f.readline())       # number of input lines to read
+    tempDocTerm = [[] for i in range(nDoc)] # list of terms per document along with term frequency
+    docTerm = [[] for i in range(nDoc)]     # list of terms per document along with tf-idf value
+    docFreq = [0 for i in range(nTerm)]     # document frequency of each term
     for i in range(N):
+        # reading the input file
         docID, termID, freq = [int(x) for x in f.readline().split()]
         tempDocTerm[docID-1].append((termID-1, float(freq)))
         docFreq[termID-1] += 1
     f.close()
+    # calculating tf-idf value and building docTerm using tempDocTerm
     for j in range(nDoc):
         for (t,f) in tempDocTerm[j]:
             docTerm[j].append((t , f * math.log (float(nDoc)/float(docFreq[t]))))
     return nDoc, nTerm, docTerm
 
+# Returns the norm of a document vector
 def norm(dc):
     return math.sqrt(sum([f*f for (i,f) in dc]))
 
+# Calculates the tf-idf distance of two document vector (along with their tf-idf values)
 def tf_idfDistance(dc1,dc2):
     i = 0
     j = 0
-    sum = 0
+    dotProduct = 0
     while (i < len(dc1) and j < len(dc2)):
         if dc1[i][0] == dc2[j][0]:
-            sum += dc1[i][1]*dc2[j][1]
+            dotProduct += dc1[i][1]*dc2[j][1]
             i += 1
             j += 1
         elif dc1[i][0] < dc2[j][0]:
             i += 1
         else:
             j += 1
-    return sum/(norm(dc1)*norm(dc2))
+    return dotProduct/(norm(dc1)*norm(dc2))
 
+# Calculate jaccard distance between two document vectors
 def jaccardDistance(dc1, dc2):
     doc1 = [i for (i,f) in dc1]
     doc2 = [i for (i,f) in dc2]
@@ -48,39 +56,14 @@ def jaccardDistance(dc1, dc2):
     dist = 1 - (len(sameWords)/(len(sameWords) + len(differentWords)))
     return dist
 
-def findCentroid(internal_cluster, docTerm, nTerm, distance):
-    new_seeds = []
-    for i, docList in internal_cluster.items():
-        numVisitedTerm = [[0,0] for j in range(nTerm)]
-        for doc in docList:
-            for (term,f) in docTerm[doc]:
-                numVisitedTerm[term][0] += 1
-                numVisitedTerm[term][1] += f/len(docList)
-        seed = []
-        for j in range(len(numVisitedTerm)):
-            if numVisitedTerm[j][0] > 0.25 * len(docList):
-                seed.append((j,numVisitedTerm[j][1]))
-        if(len(seed)==0):
-            for j in range(len(numVisitedTerm)):
-                if numVisitedTerm[j][0] > 0:
-                    seed.append((j,numVisitedTerm[j][1]))
-        minimum = sys.maxsize
-        id = 0
-        for doc in docList:
-            dist = distance(docTerm[doc], seed)
-            if(dist < minimum):
-                minimum = dist
-                id = doc
-        new_seeds.append(id)
-    return new_seeds
-            
-
-# Calculate K means
+# Calculate K means. Here given_seeds is the initial k centroids to start with and distance is the distance function we are using
 def kmeans(k, given_seeds, docTerm, nTerm, distance):
-    for iteration in range(2):
-        internal_cluster = {}
+    # iterate k means MAX_ITERATION times
+    for iteration in range(MAX_ITERATION):
+        internal_cluster = {}   # dictionary of centroid with it's set of document cluster
         for j in range(k):
-            internal_cluster[given_seeds[j]] = []
+            internal_cluster[given_seeds[j]] = []   # initializing the clusters with empty lists
+        # for each document, find the centroid it is closest to and assign it to it's cluster
         for i in range(len(docTerm)):
             minimum = sys.maxsize
             id = 0
@@ -90,12 +73,44 @@ def kmeans(k, given_seeds, docTerm, nTerm, distance):
                     minimum = dist
                     id = given_seeds[j]
             internal_cluster[id].append(i)
+        # get the new centroids for the clusters we found usign the function findCentroid
         new_seeds = findCentroid(internal_cluster, docTerm, nTerm, distance)
-        if(given_seeds == new_seeds):
+        if(given_seeds == new_seeds):   # if there is no change in centroids, we can stop
             break
         given_seeds = new_seeds
     return internal_cluster
 
+# Find centroids of given clusters
+def findCentroid(internal_cluster, docTerm, nTerm, distance):
+    new_seeds = []
+    for i, docList in internal_cluster.items():         #for each cluster
+        numVisitedTerm = [[0,0] for j in range(nTerm)]  # This stores document frequency in cluster and average tf-idf for each term
+        for doc in docList:
+            for (term,f) in docTerm[doc]:
+                numVisitedTerm[term][0] += 1
+                numVisitedTerm[term][1] += f/len(docList)
+        seed = []
+        # We calculate new seed by picking up terms that occur in more than 25% of the documents in the cluster
+        for j in range(len(numVisitedTerm)):
+            if numVisitedTerm[j][0] > 0.25 * len(docList):
+                seed.append((j,numVisitedTerm[j][1]))
+        # If the seed has no term (that occur more than 25% in the cluster), we take all the terms that occur in the cluster
+        if(len(seed)==0):
+            for j in range(len(numVisitedTerm)):
+                if numVisitedTerm[j][0] > 0:
+                    seed.append((j,numVisitedTerm[j][1]))
+        # Finding out the document in the cluster which is nearest to the seed and assigning it the centroid of the cluster
+        minimum = sys.maxsize
+        id = 0
+        for doc in docList:
+            dist = distance(docTerm[doc], seed)
+            if(dist < minimum):
+                minimum = dist
+                id = doc
+        new_seeds.append(id)
+    return new_seeds
+
+# give us initial set of random centroids
 def initialSeeds(nDoc, k):
     return random.sample(range(nDoc), k)
 
