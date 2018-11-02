@@ -4,7 +4,9 @@ import sys
 import random
 import math
 
-MAX_ITERATION = 2
+MAX_ITERATION = 10
+K_VALUE = 4
+DATASET = "docword.kos.txt"
 
 # Loads the data from file
 def loadData(fileName):
@@ -45,7 +47,7 @@ def tf_idfDistance(dc1,dc2):
             i += 1
         else:
             j += 1
-    return dotProduct/(norm(dc1)*norm(dc2))
+    return 1-dotProduct/(norm(dc1)*norm(dc2))
 
 # Calculate jaccard distance between two document vectors
 def jaccardDistance(dc1, dc2):
@@ -90,11 +92,11 @@ def findCentroid(internal_cluster, docTerm, nTerm, distance):
                 numVisitedTerm[term][0] += 1
                 numVisitedTerm[term][1] += f/len(docList)
         seed = []
-        # We calculate new seed by picking up terms that occur in more than 25% of the documents in the cluster
+        # We calculate new seed by picking up terms that occur in more than 50% of the documents in the cluster
         for j in range(len(numVisitedTerm)):
-            if numVisitedTerm[j][0] > 0.25 * len(docList):
+            if numVisitedTerm[j][0] > 0.5 * len(docList):
                 seed.append((j,numVisitedTerm[j][1]))
-        # If the seed has no term (that occur more than 25% in the cluster), we take all the terms that occur in the cluster
+        # If the seed has no term (that occur more than 50% in the cluster), we take all the terms that occur in the cluster
         if(len(seed)==0):
             for j in range(len(numVisitedTerm)):
                 if numVisitedTerm[j][0] > 0:
@@ -116,10 +118,21 @@ def initialSeeds(nDoc, k):
 
 # Main Method
 def main():
-    nDoc, nTerm, docTerm = loadData("docword.kos.txt")
-    clusters_jaccard = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, jaccardDistance)
-    clusters_tf_idf = kmeans(5, initialSeeds(nDoc, 5), docTerm, nTerm, tf_idfDistance)
-    print (clusters_jaccard, clusters_tf_idf)
+    nDoc, nTerm, docTerm = loadData(DATASET)
+
+    # Calculating and printing result for jaccard distance
+    clusters_jaccard = kmeans(K_VALUE, initialSeeds(nDoc, K_VALUE), docTerm, nTerm, jaccardDistance)
+    print("For K = ",K_VALUE,", Dataset = ",DATASET," and using jaccard distance :")
+    print("DocID of Centroids = ", list(clusters_jaccard.keys()))
+    for (i,t) in clusters_jaccard.items():
+        print("Cluster for the centroid ", i, " = ", t)
+    
+    # Calculating and printing result for if-idf distance
+    clusters_tf_idf = kmeans(K_VALUE, initialSeeds(nDoc, K_VALUE), docTerm, nTerm, tf_idfDistance)
+    print("For K = ",K_VALUE,", Dataset = ",DATASET," and using tf-idf distance :")
+    print("DocID of Centroids = ", list(clusters_tf_idf.keys()))
+    for (i,t) in clusters_tf_idf.items():
+        print("Cluster for the centroid ", i, " = ", t)
 
 # Calling main function
 if __name__=="__main__":
